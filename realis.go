@@ -19,20 +19,22 @@ import (
 	"encoding/base64"
 	"fmt"
 	"gen-go/apache/aurora"
-	"git.apache.org/thrift.git/lib/go/thrift"
-	"github.com/pkg/errors"
 	"net/http"
 	"net/http/cookiejar"
 	"os"
 	"time"
+
+	"git.apache.org/thrift.git/lib/go/thrift"
+	"github.com/pkg/errors"
 )
 
 type Realis interface {
 	AbortJobUpdate(updateKey aurora.JobUpdateKey, message string) (*aurora.Response, error)
 	AddInstances(instKey aurora.InstanceKey, count int32) (*aurora.Response, error)
+	GetJobs(ownerRole string) (*aurora.Response, error)
 	CreateJob(auroraJob Job) (*aurora.Response, error)
 	FetchTaskConfig(instKey aurora.InstanceKey) (*aurora.TaskConfig, error)
-    GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
+	GetInstanceIds(key *aurora.JobKey, states map[aurora.ScheduleStatus]bool) (map[int32]bool, error)
 	JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.Response, error)
 	KillJob(key *aurora.JobKey) (*aurora.Response, error)
 	KillInstances(key *aurora.JobKey, instances ...int32) (*aurora.Response, error)
@@ -139,6 +141,19 @@ func (r realisClient) KillInstances(key *aurora.JobKey, instances ...int32) (*au
 	if err != nil {
 		return nil, errors.Wrap(err, "Error sending Kill command to Aurora Scheduler")
 	}
+
+	return response, nil
+}
+
+func (r realisClient) GetJobs(ownerRole string) (*aurora.Response, error) {
+	response, err := r.client.GetJobs(ownerRole)
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not retrieve jobs")
+	}
+
+	// fmt.Printf("response %v\n", response)
+
+	fmt.Printf("jobs result %v\n", response.GetResult_().GetJobsResult_)
 
 	return response, nil
 }
@@ -287,5 +302,5 @@ func (r realisClient) JobUpdateDetails(updateKey aurora.JobUpdateKey) (*aurora.R
 		return nil, errors.Wrap(err, "Unable to get job update details")
 	}
 
-	return resp,nil
+	return resp, nil
 }
